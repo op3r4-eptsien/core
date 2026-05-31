@@ -1,0 +1,220 @@
+local p = game.Players.LocalPlayer
+local ts = game:GetService("TweenService")
+local vim = game:GetService("VirtualInputManager")
+local vu = game:GetService("VirtualUser")
+
+p.Idled:Connect(function()
+    vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+local on = false
+local tws = {}
+local bv = nil
+local b_loop = nil
+
+pcall(function() p.PlayerGui.m:Destroy() end)
+local sg = Instance.new("ScreenGui", p.PlayerGui)
+sg.Name = "m"
+sg.ResetOnSpawn = false
+local f = Instance.new("Frame", sg) f.Size = UDim2.new(0,80,0,30) f.Position = UDim2.new(0.5,-40,0.7,0) f.BackgroundColor3 = Color3.fromRGB(67,67,67) f.BorderSizePixel = 0 f.Active = true f.Draggable = true
+local btn = Instance.new("TextButton", f) btn.Size = UDim2.new(1,0,1,0) btn.BackgroundColor3 = Color3.fromRGB(127,127,127) btn.BorderSizePixel = 0 btn.Text = "OFF" btn.TextColor3 = Color3.fromRGB(255,255,255) btn.TextSize = 14 btn.Font = Enum.Font.Code
+
+spawn(function()
+    while wait(0.1) do
+        pcall(function() workspace.ClaimRiverResultsGold:FireServer() end)
+    end
+end)
+
+btn.MouseButton1Click:Connect(function()
+    on = not on
+    if on then
+        btn.Text = "ON"
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        if b_loop then task.cancel(b_loop) end
+        b_loop = task.spawn(function()
+            while on do
+                local c = p.Character
+                if not c or not c:FindFirstChild("HumanoidRootPart") or not c:FindFirstChild("Humanoid") or c.Humanoid.Health <= 0 then
+                    wait(0.2)
+                    continue
+                end
+                local hrp = c.HumanoidRootPart
+                local hum = c.Humanoid
+
+                local z = workspace:FindFirstChild(p.TeamColor.Name .. "Zone") or workspace:FindFirstChild(p.TeamColor.Name .. " Zone")
+                local blks = workspace:FindFirstChild("Blocks")
+                if not z or not blks then wait(0.1) continue end
+
+                for _, t in pairs(tws) do pcall(function() t:Cancel() end) end
+                tws = {}
+                if bv then pcall(function() bv:Destroy() end) bv = nil end
+
+                local pf = blks:FindFirstChild(p.Name) or blks:FindFirstChild("etdddddddddddd1")
+                if pf then
+                    for _, v in pairs(pf:GetChildren()) do
+                        if v.Name == "CarSeat" then pcall(function() v:Destroy() end) end
+                    end
+                end
+
+                local bp = p:WaitForChild("Backpack", 5)
+                if not bp then continue end
+
+                local bt = bp:FindFirstChild("BuildingTool") or c:FindFirstChild("BuildingTool")
+                local dt = bp:FindFirstChild("DeleteTool") or c:FindFirstChild("DeleteTool")
+                if not bt then wait(0.1) continue end
+                local brf = bt:FindFirstChild("RF") or bt:WaitForChild("RF", 2)
+                if not brf then continue end
+
+                spawn(function()
+                    pcall(function()
+                        local rf = dt and (dt:FindFirstChild("RF") or dt:WaitForChild("RF", 1))
+                        if rf then rf:InvokeServer(Instance.new("Model")) end
+                    end)
+                end)
+
+                local bld = true
+                spawn(function()
+                    while bld and on do
+                        pcall(function() brf:InvokeServer("CarSeat", 1, z, CFrame.new(11, 15, -130), true, z.CFrame * CFrame.new(11, 15, -130), false) end)
+                        wait(0.1)
+                    end
+                end)
+
+                local s = nil
+                local con = blks.DescendantAdded:Connect(function(d)
+                    if not s and d.Name == "CarSeat" and d.Parent and (d.Parent.Name == p.Name or d.Parent.Name == "etdddddddddddd1") then s = d end
+                end)
+                local ex = (blks:FindFirstChild(p.Name) or blks:FindFirstChild("etdddddddddddd1"))
+                if ex and ex:FindFirstChild("CarSeat") then s = ex.CarSeat end
+                local t_w = 0
+                while not s and t_w < 8 do wait(0.05) t_w = t_w + 0.05 end
+                con:Disconnect()
+                bld = false
+
+                if not s or not on or hum.Health <= 0 then wait(0.3) continue end
+
+                local r_s = s:IsA("Seat") and s or s:IsA("VehicleSeat") and s or s:FindFirstChildOfClass("Seat") or s:FindFirstChildOfClass("VehicleSeat") or s:WaitForChild("PPart", 3)
+                if not r_s then wait(0.3) continue end
+
+                hum.JumpPower = 0
+                pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false) end)
+
+                local dst1 = (r_s.Position + Vector3.new(0, 1.5, 0) - hrp.Position).Magnitude
+                local tw1 = ts:Create(hrp, TweenInfo.new(dst1 <= 0.1 and 0.05 or dst1 / 410, Enum.EasingStyle.Linear), {CFrame = CFrame.new(r_s.Position + Vector3.new(0, 1.5, 0))})
+                table.insert(tws, tw1)
+                tw1:Play()
+
+                local sat = false
+                local to = 0
+                while to < 3 do
+                    if not on or hum.Health <= 0 then break end
+                    if hum.Sit or r_s.Occupant == hum then sat = true break end
+                    if (hrp.Position - r_s.Position).Magnitude < 4 then r_s:Sit(hum) end
+                    wait(0.05) to = to + 0.05
+                end
+                pcall(function() tw1:Cancel() end)
+
+                if sat then
+                    wait(0.3)
+                    bv = Instance.new("BodyVelocity", r_s)
+                    bv.Velocity = Vector3.new(0, 0, 0)
+                    bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+                    spawn(function() pcall(function() (z:WaitForChild("VoteLaunchRE", 2)):FireServer() end) end)
+                    wait(0.2)
+
+                    if on and hum.Health > 0 then
+                        local sp = r_s.Position
+                        local up = Vector3.new(sp.X, 40, sp.Z)
+                        local dst2 = (up - sp).Magnitude
+                        local tw2 = ts:Create(r_s, TweenInfo.new(dst2 <= 0.1 and 0.05 or dst2 / 10000, Enum.EasingStyle.Linear), {CFrame = CFrame.new(up)})
+                        table.insert(tws, tw2)
+                        tw2:Play()
+                        tw2.Completed:Wait()
+
+                        if on and hum.Health > 0 then
+                            local ap = Vector3.new(-55, 40, sp.Z)
+                            local dst3 = (ap - up).Magnitude
+                            local tw3 = ts:Create(r_s, TweenInfo.new(dst3 <= 0.1 and 0.05 or dst3 / 10000, Enum.EasingStyle.Linear), {CFrame = CFrame.new(ap)})
+                            table.insert(tws, tw3)
+                            tw3:Play()
+                            tw3.Completed:Wait()
+
+                            if on and hum.Health > 0 then
+                                local ep = Vector3.new(-55, 40, 8500)
+                                local st = Enum.PlaybackState.Completed
+
+                                if sp.Z < 900 then
+                                    local mp = Vector3.new(-55, 40, 900)
+                                    local dst4 = (mp - ap).Magnitude
+                                    local tw4 = ts:Create(r_s, TweenInfo.new(dst4 <= 0.1 and 0.05 or dst4 / 10000, Enum.EasingStyle.Linear), {CFrame = CFrame.new(mp)})
+                                    table.insert(tws, tw4)
+                                    tw4:Play()
+                                    st = tw4.Completed:Wait()
+
+                                    if st == Enum.PlaybackState.Completed and on and hum.Health > 0 then
+                                        local dst5 = (ep - mp).Magnitude
+                                        local tw5 = ts:Create(r_s, TweenInfo.new(dst5 <= 0.1 and 0.05 or dst5 / 410, Enum.EasingStyle.Linear), {CFrame = CFrame.new(ep)})
+                                        table.insert(tws, tw5)
+                                        tw5:Play()
+                                        st = tw5.Completed:Wait()
+                                    end
+                                else
+                                    local dst5 = (ep - ap).Magnitude
+                                    local tw5 = ts:Create(r_s, TweenInfo.new(dst5 <= 0.1 and 0.05 or dst5 / 410, Enum.EasingStyle.Linear), {CFrame = CFrame.new(ep)})
+                                    table.insert(tws, tw5)
+                                    tw5:Play()
+                                    st = tw5.Completed:Wait()
+                                end
+
+                                if st == Enum.PlaybackState.Completed and on then
+                                    for _, t in pairs(tws) do pcall(function() t:Cancel() end) end
+                                    tws = {}
+                                    if bv then pcall(function() bv:Destroy() end) bv = nil end
+
+                                    hum.Health = 0
+                                    pcall(function() c:BreakJoints() end)
+                                    spawn(function() pcall(function() (workspace:FindFirstChild("ClearAllPlayersBoatParts") or workspace:WaitForChild("ClearAllPlayersBoatParts", 1)):FireServer() end) end)
+                                    pcall(function() p:LoadCharacter() end)
+
+                                    spawn(function()
+                                        local nc = p.Character
+                                        while not (nc and nc:FindFirstChild("Humanoid") and nc.Humanoid.Health > 0) do
+                                            wait(0.1)
+                                            nc = p.Character
+                                        end
+                                        if on then
+                                            wait(0.3)
+                                            pcall(function()
+                                                vim:SendKeyEvent(true, Enum.KeyCode.Two, false, game)
+                                                wait(0.05)
+                                                vim:SendKeyEvent(false, Enum.KeyCode.Two, false, game)
+                                            end)
+                                        end
+                                    end)
+                                end
+                            end
+                        end
+                    end
+                else
+                    wait(0.5)
+                end
+            end
+        end)
+    else
+        btn.Text = "OFF"
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        if b_loop then task.cancel(b_loop) b_loop = nil end
+        for _, t in pairs(tws) do pcall(function() t:Cancel() end) end
+        tws = {}
+        if bv then pcall(function() bv:Destroy() end) bv = nil end
+        pcall(function()
+            p.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+            p.Character.Humanoid.JumpPower = 50
+            p.Character.Humanoid.Sit = false
+            p.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end)
+    end
+end)
